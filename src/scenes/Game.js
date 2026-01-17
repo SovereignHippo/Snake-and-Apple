@@ -20,6 +20,7 @@ export class Game extends Phaser.Scene {
             movementCoolDown:60,
             movementCoolDownTime:0,
             object: undefined,
+            sprites: ['appleUp', 'appleRight', 'appleDown', 'appleLeft'],
         };
         
         this.snake = {
@@ -27,11 +28,13 @@ export class Game extends Phaser.Scene {
             size: 28,
             direction: 'left',
             nextDirection: 'left',
-            speed: 150, //Higher number actually means slower snake
+            speed: 100, //Higher number actually means slower snake
             lastMoveTime: 0,
             startingNumberOfSegments: 3,
             startingCords: {x:30, y: 9},
             currentCords: {x:30, y: 9},
+            headSprites: ['snakeHeadUp', 'snakeHeadRight', 'snakeHeadDown', 'snakeHeadLeft'],
+            tailSprites: ['snakeTailUp','snakeTailRight','snakeTailDown','snakeTailLeft'],
         };
 
 
@@ -45,6 +48,27 @@ export class Game extends Phaser.Scene {
 
     preload() {
         // Load assets
+        this.load.image('appleUp', 'assets/appleSprites/apple0.png');
+        this.load.image('appleRight', 'assets/appleSprites/apple1.png');
+        this.load.image('appleLeft', 'assets/appleSprites/apple3.png');
+        this.load.image('appleDown', 'assets/appleSprites/apple2.png');
+
+        this.load.image('snakeHeadUp','assets/snakeSprites/head0.png');
+        this.load.image('snakeHeadRight','assets/snakeSprites/head1.png');
+        this.load.image('snakeHeadLeft','assets/snakeSprites/head3.png');
+        this.load.image('snakeHeadDown','assets/snakeSprites/head2.png');
+
+        this.load.image('snakeBodyUpDown','assets/snakeSprites/snake02.png');
+        this.load.image('snakeBodyUpRight','assets/snakeSprites/snake01.png');
+        this.load.image('snakeBodyUpLeft','assets/snakeSprites/snake30.png');
+        this.load.image('snakeBodyLeftRight','assets/snakeSprites/snake31.png');
+        this.load.image('snakeBodyDownLeft','assets/snakeSprites/snake32.png');
+        this.load.image('snakeBodyDownRight','assets/snakeSprites/snake21.png');
+
+        this.load.image('snakeTailUp','assets/snakeSprites/tail0.png');
+        this.load.image('snakeTailRight','assets/snakeSprites/tail1.png');
+        this.load.image('snakeTailLeft','assets/snakeSprites/tail3.png');
+        this.load.image('snakeTailDown','assets/snakeSprites/tail2.png');
     }
 
     create() {
@@ -93,7 +117,7 @@ export class Game extends Phaser.Scene {
         
        
         //Create the apple instnace
-            this.apple.object = this.add.rectangle(this.fieldStartingPosition.x + (this.apple.startingCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.apple.startingCords.y * this.wallWidth),this.apple.size,this.apple.size,0xff0000);
+            this.apple.object = this.add.image(this.fieldStartingPosition.x + (this.apple.startingCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.apple.startingCords.y * this.wallWidth),'appleDown');
             this.field[this.apple.startingCords.x][this.apple.startingCords.y] = 'a';
             this.apple.currentCords = this.apple.startingCords;
 
@@ -102,7 +126,17 @@ export class Game extends Phaser.Scene {
             
 
             for(let i = 0; i < this.snake.startingNumberOfSegments; i++){
-                const segment = this.add.rectangle(this.fieldStartingPosition.x + (this.snake.startingCords.x * this.wallWidth) + (i * this.wallWidth),this.fieldStartingPosition.y + (this.snake.startingCords.y * this.wallWidth),this.snake.size,this.snake.size,0x0000ff);
+                let segment;
+                const x = this.fieldStartingPosition.x + (this.snake.startingCords.x * this.wallWidth) + (i * this.wallWidth);
+                const y = this.fieldStartingPosition.y + (this.snake.startingCords.y * this.wallWidth);
+                if(i == 0){
+                    segment = this.add.image(x, y, 'snakeHeadLeft');
+                }else if(i == this.snake.startingNumberOfSegments - 1){
+                    segment = this.add.image(x, y, 'snakeTailLeft');
+                }else{
+                    segment = this.add.image(x, y, 'snakeBodyLeftRight');
+                }
+                
                 const bodyPart = {
                     currentCords: {x:this.snake.startingCords.x + i, y: this.snake.startingCords.y},
                     object: segment,
@@ -136,23 +170,23 @@ export class Game extends Phaser.Scene {
 
             up.on('down', event =>
             {
-                this.MoveApple(0,-1);
+                this.MoveApple(0);
 
             });
             down.on('down', event =>
             {
-                this.MoveApple(0,1);
+                this.MoveApple(2);
 
             });
             right.on('down', event =>
             {
-                this.MoveApple(1,0);
+                this.MoveApple(1);
 
             });
             left.on('down', event =>
             {
                 
-            this.MoveApple(-1,0);
+            this.MoveApple(3);
 
             });
 
@@ -216,8 +250,26 @@ export class Game extends Phaser.Scene {
     }
 
 
-    MoveApple(xDirection = 0, yDirection = 0){
+    MoveApple(direction){
+        //if(this.isGameOver) return;
 
+        let xDirection = 0;
+        let yDirection = 0;
+
+        switch(direction){
+            case 0:
+                yDirection = -1;
+                break;
+            case 1:
+                xDirection = 1;
+                break;
+            case 2:
+                yDirection = 1;
+                break;
+            case 3:
+                xDirection = -1;
+                break;
+        }
 
         //Sets apple's sprite based on direction
 
@@ -233,7 +285,7 @@ export class Game extends Phaser.Scene {
             this.apple.object.destroy();
             this.field[this.apple.currentCords.x][this.apple.currentCords.y] = "0";
 
-            this.apple.object = this.add.rectangle(this.apple.object.x + (this.apple.moveDistance * xDirection),this.apple.object.y + (this.apple.moveDistance * yDirection),this.apple.size,this.apple.size,0xff0000);
+            this.apple.object = this.add.image(this.apple.object.x + (this.apple.moveDistance * xDirection),this.apple.object.y + (this.apple.moveDistance * yDirection),this.apple.sprites[direction]);
             this.apple.movementCoolDownTime = this.time;
             this.apple.currentCords = {x:this.apple.currentCords.x + xDirection,y: this.apple.currentCords.y + yDirection};
             this.field[this.apple.currentCords.x][this.apple.currentCords.y] = "a";
@@ -246,6 +298,7 @@ export class Game extends Phaser.Scene {
     }
 
     MoveSnake() {
+        //if(this.isGameOver) return;
          // Update current direction
         this.snake.direction = this.snake.nextDirection;
 
@@ -257,23 +310,29 @@ export class Game extends Phaser.Scene {
         let newCordX = this.snake.body[0].currentCords.x;
         let newCordY = this.snake.body[0].currentCords.y;
 
+        let direction;
+
 
         switch (this.snake.direction) {
             case 'left':
                 newX -= this.wallWidth;
                 newCordX -= 1;
+                direction = 3;
                 break;
             case 'right':
                 newX += this.wallWidth;
                 newCordX += 1;
+                direction = 1;
                 break;
             case 'up':
                 newY -= this.wallWidth;
                 newCordY -= 1;
+                direction = 0;
                 break;
             case 'down':
                 newY += this.wallWidth;
                 newCordY += 1;
+                direction = 2;
                 break;
         }
 
@@ -294,13 +353,40 @@ export class Game extends Phaser.Scene {
 
         //Move snake 
             //by making a new head
-            const newHead = this.add.rectangle(newX,newY,this.snake.size,this.snake.size,0x0000ff);
+            const newHead = this.add.image(newX,newY,this.snake.headSprites[direction]);
             const newHeadObject = {
                 currentCords: {x:newCordX, y: newCordY},
                 object: newHead,
             }
             this.field[newHeadObject.currentCords.x][newHeadObject.currentCords.y] = 's';
             this.snake.body.unshift(newHeadObject);
+
+            //update the old head's sprite
+                const thirdSnakeBodyPart = this.snake.body[2];
+                const snakeNeck = this.snake.body[1];
+
+                const x = this.fieldStartingPosition.x + (this.snake.body[1].currentCords.x * this.wallWidth);
+                const y = this.fieldStartingPosition.y + (this.snake.body[1].currentCords.y * this.wallWidth);
+
+                
+                let newSprite;
+
+                if((snakeNeck.currentCords.x > thirdSnakeBodyPart.currentCords.x || snakeNeck.currentCords.x > newHeadObject.currentCords.x) && (snakeNeck.currentCords.x < thirdSnakeBodyPart.currentCords.x || snakeNeck.currentCords.x < newHeadObject.currentCords.x)){
+                    
+                    newSprite = 'snakeBodyLeftRight';
+                }else if((snakeNeck.currentCords.y > thirdSnakeBodyPart.currentCords.y || snakeNeck.currentCords.y > newHeadObject.currentCords.y) && (snakeNeck.currentCords.y < thirdSnakeBodyPart.currentCords.y || snakeNeck.currentCords.y < newHeadObject.currentCords.y)){
+                    newSprite = 'snakeBodyUpDown';
+                }else if((snakeNeck.currentCords.y > thirdSnakeBodyPart.currentCords.y || snakeNeck.currentCords.y > newHeadObject.currentCords.y) && (snakeNeck.currentCords.x > thirdSnakeBodyPart.currentCords.x || snakeNeck.currentCords.x > newHeadObject.currentCords.x)){
+                    newSprite = 'snakeBodyUpLeft';
+                }else if((snakeNeck.currentCords.y > thirdSnakeBodyPart.currentCords.y || snakeNeck.currentCords.y > newHeadObject.currentCords.y) && (snakeNeck.currentCords.x < thirdSnakeBodyPart.currentCords.x || snakeNeck.currentCords.x < newHeadObject.currentCords.x)){
+                    newSprite = 'snakeBodyUpRight';
+                }else if((snakeNeck.currentCords.y < thirdSnakeBodyPart.currentCords.y || snakeNeck.currentCords.y < newHeadObject.currentCords.y) && (snakeNeck.currentCords.x < thirdSnakeBodyPart.currentCords.x || snakeNeck.currentCords.x < newHeadObject.currentCords.x)){
+                    newSprite = 'snakeBodyDownRight';
+                }else{
+                    newSprite = 'snakeBodyDownLeft';
+                }
+                this.snake.body[1].object.destroy();
+                this.snake.body[1].object = this.add.image(x, y, newSprite);
             
 
             //check as to weather or not it needs to grow
@@ -309,6 +395,24 @@ export class Game extends Phaser.Scene {
                 const tail = this.snake.body.pop();
                 this.field[tail.currentCords.x][tail.currentCords.y] = '0';
                 tail.object.destroy();
+
+                //update new tail
+                const tailToBe = this.snake.body[this.snake.body.length - 1];
+                const lastPartOfSnakeThatIsntTail = this.snake.body[this.snake.body.length - 2];
+                let tailDirection;
+                if(lastPartOfSnakeThatIsntTail.currentCords.x > tailToBe.currentCords.x){
+                    tailDirection = 1;
+                }else if(lastPartOfSnakeThatIsntTail.currentCords.x < tailToBe.currentCords.x){
+                    tailDirection = 3;
+                }else if(lastPartOfSnakeThatIsntTail.currentCords.y < tailToBe.currentCords.y){
+                    tailDirection = 0;
+                }else{
+                    tailDirection = 2;
+                }
+                let newTailX = this.fieldStartingPosition.x + (this.snake.body[this.snake.body.length - 1].currentCords.x * this.wallWidth);
+                let newTailY = this.fieldStartingPosition.y + (this.snake.body[this.snake.body.length - 1].currentCords.y * this.wallWidth);
+                this.snake.body[this.snake.body.length - 1].object.destroy();
+                this.snake.body[this.snake.body.length - 1].object = this.add.image(newTailX, newTailY, this.snake.tailSprites[tailDirection]);
             }else{
                 //Apple has been eaten
                 this.apple.object.destroy();
@@ -329,7 +433,7 @@ export class Game extends Phaser.Scene {
 
         this.field[x][y] = 'a';
         this.apple.currentCords = {x: x, y: y};
-        this.apple.object = this.add.rectangle(this.fieldStartingPosition.x + (x * this.wallWidth), this.fieldStartingPosition.y + (y * this.wallWidth),this.apple.size,this.apple.size,0xff0000);
+        this.apple.object = this.add.image(this.fieldStartingPosition.x + (x * this.wallWidth), this.fieldStartingPosition.y + (y * this.wallWidth),this.apple.sprites[2]);
 
     }
 
