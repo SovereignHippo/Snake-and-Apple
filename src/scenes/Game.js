@@ -8,6 +8,13 @@ export class Game extends Phaser.Scene {
         this.fieldStartingPosition = {x: 60, y:60};
         this.fieldColors = {colorA: 0x303070, colorB: 0x000000, wallColor: 0x808080}
         this.isGameOver;
+        this.gameTimer;
+        this.gameTimerStartingValue = 30;
+        this.gameTimeAddedOnKill = 5;
+        this.gameCurrentScore;
+
+        this.scoreMessage = "Score: ";
+        this.timeMessage = "Time: ";
         
 
         this.apple = {
@@ -21,6 +28,8 @@ export class Game extends Phaser.Scene {
             movementCoolDownTime:0,
             object: undefined,
             sprites: ['appleUp', 'appleRight', 'appleDown', 'appleLeft'],
+            directionOffSet: 0,
+            
         };
         
         this.snake = {
@@ -74,6 +83,7 @@ export class Game extends Phaser.Scene {
     create() {
         // Create game objects
         this.isGameOver = false;
+        this.gameTimer = this.gameTimerStartingValue;
 
         //Build the field
             this.field = Array.from({ length: this.playingField.width }, () => new Array(this.playingField.height).fill('0'));
@@ -117,9 +127,10 @@ export class Game extends Phaser.Scene {
         
        
         //Create the apple instnace
-            this.apple.object = this.add.image(this.fieldStartingPosition.x + (this.apple.startingCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.apple.startingCords.y * this.wallWidth),'appleDown');
-            this.field[this.apple.startingCords.x][this.apple.startingCords.y] = 'a';
-            this.apple.currentCords = this.apple.startingCords;
+            this.mainApple = Object.create(this.apple);
+            this.mainApple.object = this.add.sprite(this.fieldStartingPosition.x + (this.mainApple.startingCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.mainApple.startingCords.y * this.wallWidth),'appleDown');
+            this.field[this.mainApple.startingCords.x][this.mainApple.startingCords.y] = 'a';
+            this.mainApple.currentCords = this.mainApple.startingCords;
 
         //Create the snake instnace
             this.snake.body = [];
@@ -130,11 +141,11 @@ export class Game extends Phaser.Scene {
                 const x = this.fieldStartingPosition.x + (this.snake.startingCords.x * this.wallWidth) + (i * this.wallWidth);
                 const y = this.fieldStartingPosition.y + (this.snake.startingCords.y * this.wallWidth);
                 if(i == 0){
-                    segment = this.add.image(x, y, 'snakeHeadLeft');
+                    segment = this.add.sprite(x, y, 'snakeHeadLeft');
                 }else if(i == this.snake.startingNumberOfSegments - 1){
-                    segment = this.add.image(x, y, 'snakeTailLeft');
+                    segment = this.add.sprite(x, y, 'snakeTailLeft');
                 }else{
-                    segment = this.add.image(x, y, 'snakeBodyLeftRight');
+                    segment = this.add.sprite(x, y, 'snakeBodyLeftRight');
                 }
                 
                 const bodyPart = {
@@ -170,23 +181,24 @@ export class Game extends Phaser.Scene {
 
             up.on('down', event =>
             {
-                this.MoveApple(0);
+                
+                this.MoveApple(0,this.mainApple);
 
             });
             down.on('down', event =>
             {
-                this.MoveApple(2);
+                this.MoveApple(2,this.mainApple);
 
             });
             right.on('down', event =>
             {
-                this.MoveApple(1);
+                this.MoveApple(1,this.mainApple);
 
             });
             left.on('down', event =>
             {
                 
-            this.MoveApple(3);
+            this.MoveApple(3,this.mainApple);
 
             });
 
@@ -217,13 +229,27 @@ export class Game extends Phaser.Scene {
          this.cursors = this.input.keyboard.createCursorKeys();
 
          
+
+        //Create the timer text
+            this.timerText = this.add.text(50, 5, this.timeMessage + Math.ceil(this.gameTimer), {
+            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 8,
+            align: 'center'
+        })
+        //Create the score text
+            this.gameCurrentScore = 0;
+            this.scoreText = this.add.text(1100, 5, this.scoreMessage + Math.ceil(this.gameCurrentScore), {
+            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 8,
+            align: 'center'
+        })
         //console.log(this.field);
    
     }
 
     
 
-    update(time){
+    update(time, delta){
         
         this.time = time;
         
@@ -245,16 +271,22 @@ export class Game extends Phaser.Scene {
         }
             
         
+        //Update Game Timer
+            this.gameTimer -= (delta/1000);   
+            if(this.gameTimer < 0) this.gameTimer = 0;
+            this.timerText.text = this.timeMessage + Math.ceil(this.gameTimer);
        
 
     }
 
 
-    MoveApple(direction){
+    MoveApple(direction, appleRefrence){
         //if(this.isGameOver) return;
 
         let xDirection = 0;
         let yDirection = 0;
+
+        direction = (direction + appleRefrence.directionOffSet)%4;
 
         switch(direction){
             case 0:
@@ -274,21 +306,20 @@ export class Game extends Phaser.Scene {
         //Sets apple's sprite based on direction
 
         //Check if control is being held
-        if(this.apple.isNoMoveBeingPressed) return;
+        //if(appleRefrence.isNoMoveBeingPressed) return;
 
         //Check if the apple is allowed to move where it want to
-        if(this.field[this.apple.currentCords.x + xDirection][this.apple.currentCords.y + yDirection] != '0')return;
+        if(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection] != '0')return;
 
         //Moves Apple
-        if(this.time >= this.apple.movementCoolDownTime + this.apple.movementCoolDown){
+        if(this.time >= appleRefrence.movementCoolDownTime + appleRefrence.movementCoolDown){
             //Physically move the apple
-            this.apple.object.destroy();
-            this.field[this.apple.currentCords.x][this.apple.currentCords.y] = "0";
+            appleRefrence.object.destroy();
+            this.field[appleRefrence.currentCords.x][appleRefrence.currentCords.y] = "0";
 
-            this.apple.object = this.add.image(this.apple.object.x + (this.apple.moveDistance * xDirection),this.apple.object.y + (this.apple.moveDistance * yDirection),this.apple.sprites[direction]);
-            this.apple.movementCoolDownTime = this.time;
-            this.apple.currentCords = {x:this.apple.currentCords.x + xDirection,y: this.apple.currentCords.y + yDirection};
-            this.field[this.apple.currentCords.x][this.apple.currentCords.y] = "a";
+            appleRefrence.object = this.add.sprite(appleRefrence.object.x + (appleRefrence.moveDistance * xDirection),appleRefrence.object.y + (this.apple.moveDistance * yDirection),this.apple.sprites[direction]);
+            appleRefrence.currentCords = {x:appleRefrence.currentCords.x + xDirection,y: appleRefrence.currentCords.y + yDirection};
+            this.field[appleRefrence.currentCords.x][appleRefrence.currentCords.y] = "a";
 
            
             
@@ -353,7 +384,7 @@ export class Game extends Phaser.Scene {
 
         //Move snake 
             //by making a new head
-            const newHead = this.add.image(newX,newY,this.snake.headSprites[direction]);
+            const newHead = this.add.sprite(newX,newY,this.snake.headSprites[direction]);
             const newHeadObject = {
                 currentCords: {x:newCordX, y: newCordY},
                 object: newHead,
@@ -386,7 +417,7 @@ export class Game extends Phaser.Scene {
                     newSprite = 'snakeBodyDownLeft';
                 }
                 this.snake.body[1].object.destroy();
-                this.snake.body[1].object = this.add.image(x, y, newSprite);
+                this.snake.body[1].object = this.add.sprite(x, y, newSprite);
             
 
             //check as to weather or not it needs to grow
@@ -412,11 +443,16 @@ export class Game extends Phaser.Scene {
                 let newTailX = this.fieldStartingPosition.x + (this.snake.body[this.snake.body.length - 1].currentCords.x * this.wallWidth);
                 let newTailY = this.fieldStartingPosition.y + (this.snake.body[this.snake.body.length - 1].currentCords.y * this.wallWidth);
                 this.snake.body[this.snake.body.length - 1].object.destroy();
-                this.snake.body[this.snake.body.length - 1].object = this.add.image(newTailX, newTailY, this.snake.tailSprites[tailDirection]);
+                this.snake.body[this.snake.body.length - 1].object = this.add.sprite(newTailX, newTailY, this.snake.tailSprites[tailDirection]);
             }else{
                 //Apple has been eaten
-                this.apple.object.destroy();
+                this.mainApple.object.destroy();
                 this.RespawnApple();
+                //Give more time
+                this.gameTimer += this.gameTimeAddedOnKill;
+                //Update Score and score text
+                this.gameCurrentScore++;
+                this.scoreText.text = this.scoreMessage + Math.ceil(this.gameCurrentScore);
                 //Need to add logic
             }
         
@@ -432,8 +468,8 @@ export class Game extends Phaser.Scene {
         }
 
         this.field[x][y] = 'a';
-        this.apple.currentCords = {x: x, y: y};
-        this.apple.object = this.add.image(this.fieldStartingPosition.x + (x * this.wallWidth), this.fieldStartingPosition.y + (y * this.wallWidth),this.apple.sprites[2]);
+        this.mainApple.currentCords = {x: x, y: y};
+        this.mainApple.object = this.add.sprite(this.fieldStartingPosition.x + (x * this.wallWidth), this.fieldStartingPosition.y + (y * this.wallWidth),this.apple.sprites[2]);
 
     }
 
