@@ -40,6 +40,7 @@ export class Game extends Phaser.Scene {
             makeParentInvisible: false,
             isFragile: false,
             isReadyToBeDeleted: false,
+            canPerformMagic: true,
             makeVisible: function(){
                 for(let child of this.children){
                     if(child.makeParentInvisible){
@@ -363,6 +364,12 @@ export class Game extends Phaser.Scene {
         //Check if the apple is allowed to move where it want to
         if(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection] != '0'){
             
+            //Kills the thing this apple collides with if fragile
+            let collision = this.GetAppleWithId(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection]);
+            if(collision?.isFragile){
+                collision.Kill();
+            }
+
             //If the apple if fragile then it will die if it tries to run into a wall or snake
             if(appleRefrence.isFragile){
                 
@@ -454,7 +461,7 @@ export class Game extends Phaser.Scene {
                 case '0':
                     break;
                 default:
-                    this.DestroyAppleWithId(this.field[newCordX][newCordY]);
+                    this.GetAppleWithId(this.field[newCordX][newCordY]).Kill();
             }
 
         //Move snake 
@@ -592,6 +599,11 @@ export class Game extends Phaser.Scene {
 
             //Clone Jitsu
                 for(let apple of currentAppleList){
+                    if(!apple.canPerformMagic){
+                        this.MoveApple(direction,apple);
+                        continue;
+                    };
+
                     let relativeDirection = (direction + apple.directionOffSet)%4;
                     let xDirection = 0;
                     let yDirection = 0;
@@ -611,7 +623,10 @@ export class Game extends Phaser.Scene {
                             break;
                     }
 
-                    if(this.field[apple.currentCords.x + xDirection][apple.currentCords.y + yDirection] != '0') continue;
+                    if(this.field[apple.currentCords.x + xDirection][apple.currentCords.y + yDirection] != '0') {
+                        this.MoveApple(direction,apple);
+                        continue;
+                    };
 
                     function killFunctionForShawdowClone(){
                         for(let child of this.children){
@@ -635,16 +650,16 @@ export class Game extends Phaser.Scene {
                     }
 
                     if(relativeDirection != '0' && this.field[apple.currentCords.x][apple.currentCords.y - 1] == '0'){
-                        this.SummonNewApple(apple.currentCords.x,apple.currentCords.y - 1,killFunctionForShawdowClone,apple,(4 - relativeDirection)%4,true,true,true,0);
+                        this.SummonNewApple(apple.currentCords.x,apple.currentCords.y - 1,killFunctionForShawdowClone,apple,(4 - direction)%4,true,true,true,true,0);
                     }
                     if(relativeDirection != '1' && this.field[apple.currentCords.x + 1][apple.currentCords.y] == '0'){
-                        this.SummonNewApple(apple.currentCords.x + 1,apple.currentCords.y,killFunctionForShawdowClone,apple,(5 - relativeDirection)%4,true,true,true,1);
+                        this.SummonNewApple(apple.currentCords.x + 1,apple.currentCords.y,killFunctionForShawdowClone,apple,(5 - direction)%4,true,true,true,true,1);
                     }
                     if(relativeDirection != '2' && this.field[apple.currentCords.x][apple.currentCords.y + 1] == '0'){
-                        this.SummonNewApple(apple.currentCords.x,apple.currentCords.y + 1,killFunctionForShawdowClone,apple,(6 - relativeDirection)%4,true,true,true,2);
+                        this.SummonNewApple(apple.currentCords.x,apple.currentCords.y + 1,killFunctionForShawdowClone,apple,(6 - direction)%4,true,true,true,true,2);
                     }
                     if(relativeDirection != '3' && this.field[apple.currentCords.x - 1][apple.currentCords.y] == '0'){
-                        this.SummonNewApple(apple.currentCords.x - 1,apple.currentCords.y,killFunctionForShawdowClone,apple,(7 - relativeDirection)%4,true,true,true,3);
+                        this.SummonNewApple(apple.currentCords.x - 1,apple.currentCords.y,killFunctionForShawdowClone,apple,(7 - direction)%4,true,true,true,true,3);
                     }
 
                     this.MoveApple(direction,apple);
@@ -677,12 +692,10 @@ export class Game extends Phaser.Scene {
         }
     }
 
-    DestroyAppleWithId(id){
+    GetAppleWithId(id){
         for(let element of this.apples){
             if(element.id == id){
-                element.Kill();
-                this.DestroyApplesWhoNeedIt();
-                break;
+                return element;
             }
         }
     }
@@ -692,7 +705,7 @@ export class Game extends Phaser.Scene {
         return this.idMakerCount.toString();
     }
 
-    SummonNewApple(xCordinante, yCordinante,killFunction,parentApple,offSetValue = 0,visibility = true,movability = true,fragility = false,sprite = 2){
+    SummonNewApple(xCordinante, yCordinante,killFunction,parentApple,offSetValue = 0,visibility = true,movability = true,fragility = false,isMagical = true,sprite = 2){
         let newApple = Object.create(this.apple);
         newApple.currentCords = {x:xCordinante,y:yCordinante};
             if(visibility){
@@ -706,6 +719,7 @@ export class Game extends Phaser.Scene {
             newApple.parent = parentApple;
             newApple.directionOffSet = offSetValue;
             newApple.isFragile = fragility;
+            newApple.canPerformMagic = isMagical;
             
             parentApple.children.push(newApple);
             newApple.children = [];
