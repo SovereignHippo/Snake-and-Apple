@@ -12,12 +12,16 @@ export class Game extends Phaser.Scene {
         this.gameTimerStartingValue = 30;
         this.gameTimeAddedOnKill = 5;
         this.gameCurrentScore;
+        this.idMakerCount;
 
         this.scoreMessage = "Score: ";
         this.timeMessage = "Time: ";
-        
+
+        this.inputLog = [];
+        this.apples = [];
 
         this.apple = {
+            id: "-1",
             size: 28,
             isNoMoveBeingPressed: false,
             moveDistance: this.wallWidth,
@@ -29,6 +33,25 @@ export class Game extends Phaser.Scene {
             object: undefined,
             sprites: ['appleUp', 'appleRight', 'appleDown', 'appleLeft'],
             directionOffSet: 0,
+            parent: undefined,
+            children: new Array(),
+            isVisible: true,
+            canMove: true,
+            makeParentInvisible: false,
+            isFragile: false,
+            isReadyToBeDeleted: false,
+            makeVisible: function(){
+                for(let child of this.children){
+                    if(child.makeParentInvisible){
+                        return;
+                    }
+                }
+                if(!isVisible){
+                    this.object = this.add.sprite(this.fieldStartingPosition.x + (this.currentCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.currentCords.y * this.wallWidth),this.sprites[2]);
+                }
+                isVisible = true;
+            }
+
             
         };
         
@@ -84,6 +107,8 @@ export class Game extends Phaser.Scene {
         // Create game objects
         this.isGameOver = false;
         this.gameTimer = this.gameTimerStartingValue;
+        this.inputLog = [];
+        this.idMakerCount = 1;
 
         //Build the field
             this.field = Array.from({ length: this.playingField.width }, () => new Array(this.playingField.height).fill('0'));
@@ -131,6 +156,14 @@ export class Game extends Phaser.Scene {
             this.mainApple.object = this.add.sprite(this.fieldStartingPosition.x + (this.mainApple.startingCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.mainApple.startingCords.y * this.wallWidth),'appleDown');
             this.field[this.mainApple.startingCords.x][this.mainApple.startingCords.y] = 'a';
             this.mainApple.currentCords = this.mainApple.startingCords;
+            this.mainApple.id = 'a';
+            this.mainApple.Kill = function(){
+                for(let item of this.children){
+                    item.Kill();
+                }
+            }
+            this.apples = [this.mainApple];
+            
 
         //Create the snake instnace
             this.snake.body = [];
@@ -157,18 +190,6 @@ export class Game extends Phaser.Scene {
             }
             
 
-        //Combo manager
-            //Sets the combos
-                this.input.keyboard.createCombo('WWSSADAD', {resetOnMatch: true, resetOnWrongKey: true});
-
-
-            //reads the combos
-                this.input.keyboard.on('keycombomatch', function (keyCombo) {
-                    
-                    console.log(keyCombo.keyCodes);
-                    
-                })
-
                
 
          
@@ -181,24 +202,51 @@ export class Game extends Phaser.Scene {
 
             up.on('down', event =>
             {
+                //Cleans up the apples array destroying any that need it
+                this.DestroyApplesWhoNeedIt();
+
+                if(!this.ComboManager(0)){
+                    for(let apple of this.apples){
+                        this.MoveApple(0,apple);
+                    }
+                    
+                }
                 
-                this.MoveApple(0,this.mainApple);
 
             });
             down.on('down', event =>
             {
-                this.MoveApple(2,this.mainApple);
-
+                //Cleans up the apples array destroying any that need it
+                this.DestroyApplesWhoNeedIt();
+                
+                if(!this.ComboManager(2)){
+                    for(let apple of this.apples){
+                        this.MoveApple(2,apple);
+                    }
+                }
             });
             right.on('down', event =>
             {
-                this.MoveApple(1,this.mainApple);
+                //Cleans up the apples array destroying any that need it
+                this.DestroyApplesWhoNeedIt();
+                
+                if(!this.ComboManager(1)){
+                    for(let apple of this.apples){
+                        this.MoveApple(1,apple);
+                    }
+                }
 
             });
             left.on('down', event =>
             {
+                //Cleans up the apples array destroying any that need it
+                this.DestroyApplesWhoNeedIt();
                 
-            this.MoveApple(3,this.mainApple);
+                if(!this.ComboManager(3)){
+                        for(let apple of this.apples){
+                            this.MoveApple(3,apple);
+                    }
+                    }
 
             });
 
@@ -250,7 +298,9 @@ export class Game extends Phaser.Scene {
     
 
     update(time, delta){
+
         
+
         this.time = time;
         
         
@@ -283,6 +333,8 @@ export class Game extends Phaser.Scene {
     MoveApple(direction, appleRefrence){
         //if(this.isGameOver) return;
 
+       
+
         let xDirection = 0;
         let yDirection = 0;
 
@@ -309,17 +361,34 @@ export class Game extends Phaser.Scene {
         //if(appleRefrence.isNoMoveBeingPressed) return;
 
         //Check if the apple is allowed to move where it want to
-        if(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection] != '0')return;
+        if(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection] != '0'){
+            
+            //If the apple if fragile then it will die if it tries to run into a wall or snake
+            if(appleRefrence.isFragile){
+                
+                appleRefrence.Kill();
+                
+            }
+
+            return;
+
+        };
+        
+        //Check if the apple is allowed to move
+        if(!appleRefrence.canMove) return;
 
         //Moves Apple
         if(this.time >= appleRefrence.movementCoolDownTime + appleRefrence.movementCoolDown){
-            //Physically move the apple
-            appleRefrence.object.destroy();
-            this.field[appleRefrence.currentCords.x][appleRefrence.currentCords.y] = "0";
+            //Physically move the apple if visable
+            appleRefrence.object?.destroy();
+            if(appleRefrence.isVisible && !appleRefrence.isReadyToBeDeleted){
+                appleRefrence.object = this.add.sprite(appleRefrence.object.x + (appleRefrence.moveDistance * xDirection),appleRefrence.object.y + (this.apple.moveDistance * yDirection),this.apple.sprites[direction]);
+            }
+            
 
-            appleRefrence.object = this.add.sprite(appleRefrence.object.x + (appleRefrence.moveDistance * xDirection),appleRefrence.object.y + (this.apple.moveDistance * yDirection),this.apple.sprites[direction]);
+            this.field[appleRefrence.currentCords.x][appleRefrence.currentCords.y] = "0";
             appleRefrence.currentCords = {x:appleRefrence.currentCords.x + xDirection,y: appleRefrence.currentCords.y + yDirection};
-            this.field[appleRefrence.currentCords.x][appleRefrence.currentCords.y] = "a";
+            this.field[appleRefrence.currentCords.x][appleRefrence.currentCords.y] = appleRefrence.id;
 
            
             
@@ -330,6 +399,8 @@ export class Game extends Phaser.Scene {
 
     MoveSnake() {
         //if(this.isGameOver) return;
+
+
          // Update current direction
         this.snake.direction = this.snake.nextDirection;
 
@@ -380,6 +451,10 @@ export class Game extends Phaser.Scene {
                 case 's':
                     this.GameOver();
                     return;
+                case '0':
+                    break;
+                default:
+                    this.DestroyAppleWithId(this.field[newCordX][newCordY]);
             }
 
         //Move snake 
@@ -447,6 +522,8 @@ export class Game extends Phaser.Scene {
             }else{
                 //Apple has been eaten
                 this.mainApple.object.destroy();
+                this.mainApple.Kill();
+                this.inputLog = [];
                 this.RespawnApple();
                 //Give more time
                 this.gameTimer += this.gameTimeAddedOnKill;
@@ -479,7 +556,164 @@ export class Game extends Phaser.Scene {
         console.log('Game Over!');
     }
 
+    ComboManager(direction){
+        //Manges the combo both input and and doing actions
+        //returns true if this function handles movement, false if it does not
 
+        const inputLogMaxLength = 10;
+        const currentAppleList = this.apples.slice();
+
+        
+
+        switch(direction){
+            case 0:
+                this.inputLog.push('W');
+                break;
+            case 1:
+                this.inputLog.push('D');
+                break;
+            case 2:
+                this.inputLog.push('S');
+                break;
+            case 3:
+                this.inputLog.push('A');
+                break;
+        }
+            //UseFull for lots of functions
+            
+                
+
+        // keep the array length below the maxium
+        while(this.inputLog.length > inputLogMaxLength){
+            this.inputLog.shift();
+        }
+
+        if(this.inputLog.slice(-9,-1).join("") == "WWSSADAD"){
+
+            //Clone Jitsu
+                for(let apple of currentAppleList){
+                    let relativeDirection = (direction + apple.directionOffSet)%4;
+                    let xDirection = 0;
+                    let yDirection = 0;
+
+                    switch(relativeDirection){
+                        case 0:
+                            yDirection = -1;
+                            break;
+                        case 1:
+                            xDirection = 1;
+                            break;
+                        case 2:
+                            yDirection = 1;
+                            break;
+                        case 3:
+                            xDirection = -1;
+                            break;
+                    }
+
+                    if(this.field[apple.currentCords.x + xDirection][apple.currentCords.y + yDirection] != '0') continue;
+
+                    function killFunctionForShawdowClone(){
+                        for(let child of this.children){
+                            
+                            child.Kill();
+                        }
+
+                        this.object.destroy();
+                        
+                        for(let i = 0; i < this.parent.children.length; i++ ){
+                            if(this.parent.children[i].id == apple.id){
+                                this.parent.children.splice(i,1);
+                                break;
+                            }
+                        }
+
+                        
+                        //Makes it ready to be deleted next iteration
+                        this.isReadyToBeDeleted = true;
+                        
+                    }
+
+                    if(relativeDirection != '0' && this.field[apple.currentCords.x][apple.currentCords.y - 1] == '0'){
+                        this.SummonNewApple(apple.currentCords.x,apple.currentCords.y - 1,killFunctionForShawdowClone,apple,(4 - relativeDirection)%4,true,true,true,0);
+                    }
+                    if(relativeDirection != '1' && this.field[apple.currentCords.x + 1][apple.currentCords.y] == '0'){
+                        this.SummonNewApple(apple.currentCords.x + 1,apple.currentCords.y,killFunctionForShawdowClone,apple,(5 - relativeDirection)%4,true,true,true,1);
+                    }
+                    if(relativeDirection != '2' && this.field[apple.currentCords.x][apple.currentCords.y + 1] == '0'){
+                        this.SummonNewApple(apple.currentCords.x,apple.currentCords.y + 1,killFunctionForShawdowClone,apple,(6 - relativeDirection)%4,true,true,true,2);
+                    }
+                    if(relativeDirection != '3' && this.field[apple.currentCords.x - 1][apple.currentCords.y] == '0'){
+                        this.SummonNewApple(apple.currentCords.x - 1,apple.currentCords.y,killFunctionForShawdowClone,apple,(7 - relativeDirection)%4,true,true,true,3);
+                    }
+
+                    this.MoveApple(direction,apple);
+
+                    
+                }
+                return true;
+                
+            }
+                
+        
+        
+        
+        return false;
+
+    }
+
+    DestroyApplesWhoNeedIt(){
+        for(let i = this.apples.length - 1; i > 0; i--){
+            if(this.apples[i].isReadyToBeDeleted){
+                switch(this.field[this.apples[i].currentCords.x][this.apples[i].currentCords.y]){
+                    case 's':
+                    case 'w':
+                        break;
+                    default:
+                        this.field[this.apples[i].currentCords.x][this.apples[i].currentCords.y] = '0';
+                }
+                this.apples.splice(i,1);
+            }
+        }
+    }
+
+    DestroyAppleWithId(id){
+        for(let element of this.apples){
+            if(element.id == id){
+                element.Kill();
+                this.DestroyApplesWhoNeedIt();
+                break;
+            }
+        }
+    }
+
+    GetANewId(){
+        this.idMakerCount++;
+        return this.idMakerCount.toString();
+    }
+
+    SummonNewApple(xCordinante, yCordinante,killFunction,parentApple,offSetValue = 0,visibility = true,movability = true,fragility = false,sprite = 2){
+        let newApple = Object.create(this.apple);
+        newApple.currentCords = {x:xCordinante,y:yCordinante};
+            if(visibility){
+                newApple.object = this.add.sprite(this.fieldStartingPosition.x + (newApple.currentCords.x * this.wallWidth),this.fieldStartingPosition.y + (newApple.currentCords.y * this.wallWidth),newApple.sprites[sprite]);
+             }
+            newApple.id = this.GetANewId();
+            this.field[newApple.currentCords.x][newApple.currentCords.y] = newApple.id;
+            newApple.Kill = killFunction;
+            newApple.isVisible = visibility;
+            newApple.canMove = movability;
+            newApple.parent = parentApple;
+            newApple.directionOffSet = offSetValue;
+            newApple.isFragile = fragility;
+            
+            parentApple.children.push(newApple);
+            newApple.children = [];
+            this.apples.push(newApple);
+            
+            
+                    
+    }
 
 
 }
