@@ -41,6 +41,8 @@ export class Game extends Phaser.Scene {
             isFragile: false,
             isReadyToBeDeleted: false,
             canPerformMagic: true,
+            deathSound: "smokePoofSound",
+            deathEffect: "whisp",
             makeVisible: function(){
                 for(let child of this.children){
                     if(child.makeParentInvisible){
@@ -102,6 +104,11 @@ export class Game extends Phaser.Scene {
         this.load.image('snakeTailRight','assets/snakeSprites/tail1.png');
         this.load.image('snakeTailLeft','assets/snakeSprites/tail3.png');
         this.load.image('snakeTailDown','assets/snakeSprites/tail2.png');
+
+        this.load.audio('smokePoofSound','assets/sounds/NarutoSmokeSound.mp3');
+
+        this.load.image('smoke','assets/particles/whitePuff.png');
+        this.load.image('whisp','assets/particles/blackSmoke.png')
     }
 
     create() {
@@ -110,6 +117,8 @@ export class Game extends Phaser.Scene {
         this.gameTimer = this.gameTimerStartingValue;
         this.inputLog = [];
         this.idMakerCount = 1;
+
+        
 
         //Build the field
             this.field = Array.from({ length: this.playingField.width }, () => new Array(this.playingField.height).fill('0'));
@@ -407,6 +416,8 @@ export class Game extends Phaser.Scene {
     MoveSnake() {
         //if(this.isGameOver) return;
 
+        //Aditional destroy apples check
+            this.DestroyApplesWhoNeedIt();
 
          // Update current direction
         this.snake.direction = this.snake.nextDirection;
@@ -635,6 +646,8 @@ export class Game extends Phaser.Scene {
                         }
 
                         this.object.destroy();
+
+                        
                         
                         for(let i = 0; i < this.parent.children.length; i++ ){
                             if(this.parent.children[i].id == apple.id){
@@ -648,6 +661,14 @@ export class Game extends Phaser.Scene {
                         this.isReadyToBeDeleted = true;
                         
                     }
+
+                    //Play the sound
+                        this.sound.play("smokePoofSound" ,{
+                            volume: 1,
+                        });
+
+                    //Smoke bomb effect
+                        this.CreateSmokeEffect(apple.currentCords.x,apple.currentCords.y);
 
                     if(relativeDirection != '0' && this.field[apple.currentCords.x][apple.currentCords.y - 1] == '0'){
                         this.SummonNewApple(apple.currentCords.x,apple.currentCords.y - 1,killFunctionForShawdowClone,apple,(4 - direction)%4,true,true,true,true,0);
@@ -687,6 +708,9 @@ export class Game extends Phaser.Scene {
                     default:
                         this.field[this.apples[i].currentCords.x][this.apples[i].currentCords.y] = '0';
                 }
+                //create a whisp effect
+                    this.CreateWhispEffect(this.apples[i].currentCords.x,this.apples[i].currentCords.y,this.apples[i].deathEffect,this.apples[i].deathSound);
+                    
                 this.apples.splice(i,1);
             }
         }
@@ -727,6 +751,45 @@ export class Game extends Phaser.Scene {
             
             
                     
+    }
+
+    CreateSmokeEffect(xCord, yCord){
+        let emitter = this.add.particles(this.fieldStartingPosition.x + (xCord * this.wallWidth),this.fieldStartingPosition.y + (yCord * this.wallWidth),'smoke', {
+            speed: 2,
+            lifespan: 400,
+            quantity: 1,
+            scale: {start: .1, end: .5,ease: 'Expo.easeOut'},
+            emitting: true,
+            duration: 100,
+            alpha: {start: 1, end: 0,ease: 'Expo.easeIn'},
+            particleBringToTop: true,
+            maxParticles: 4,
+        });
+
+        emitter.setDepth(1);
+    }
+
+    CreateWhispEffect(xCord, yCord,effect,sound){
+        let emitter = this.add.particles(this.fieldStartingPosition.x + (xCord * this.wallWidth),this.fieldStartingPosition.y + (yCord * this.wallWidth),effect,
+        {
+            speed: 2,
+            lifespan: 400,
+            quantity: 1,
+            scale: {start: .1, end: .2,ease: 'Expo.easeOut'},
+            emitting: true,
+            duration: 100,
+            alpha: {start: 1, end: 0,ease: 'Expo.easeIn'},
+            particleBringToTop: true,
+            maxParticles: 4,
+        });
+
+        emitter.setDepth(1);
+
+        //Play the sound 
+            this.sound.play(sound ,{
+                volume: .4,
+                delay: Math.random() * .5,
+            });
     }
 
 
