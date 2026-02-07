@@ -3,9 +3,9 @@ export class Game extends Phaser.Scene {
     constructor() {
         super('Game');
 
-        this.playingField = {width: 40, height: 20};
-        this.wallWidth = 30;
-        this.fieldStartingPosition = {x: 60, y:60};
+        this.playingField = {width: 18, height: 18};
+        this.wallWidth = 32;
+        this.fieldStartingPosition;
         this.fieldColors = {colorA: 0x303070, colorB: 0x000000, wallColor: 0x808080}
         this.isGameOver;
         this.gameTimer;
@@ -13,6 +13,9 @@ export class Game extends Phaser.Scene {
         this.gameTimeAddedOnKill = 5;
         this.gameCurrentScore;
         this.idMakerCount;
+        this.isPaused;
+        this.isAppleReadyUp;
+        this.isSnakeReadyUp;
 
         this.scoreMessage = "Score: ";
         this.timeMessage = "Time: ";
@@ -22,11 +25,11 @@ export class Game extends Phaser.Scene {
 
         this.apple = {
             id: "-1",
-            size: 28,
+            size: 28, //outdate, no longer used
             isNoMoveBeingPressed: false,
             moveDistance: this.wallWidth,
-            startingCords: {x:5, y:9},
-            currentCords: {x:5, y:9},
+            startingCords: {x:2, y:9},
+            currentCords: {x:2, y:9},
             isOnMovementCoolDown: false,
             movementCoolDown:60,
             movementCoolDownTime:0,
@@ -60,14 +63,14 @@ export class Game extends Phaser.Scene {
         
         this.snake = {
             body: [],
-            size: 28,
+            size: 28, //outdate, no longer used
             direction: 'left',
             nextDirection: 'left',
             speed: 100, //Higher number actually means slower snake
             lastMoveTime: 0,
-            startingNumberOfSegments: 3,
-            startingCords: {x:30, y: 9},
-            currentCords: {x:30, y: 9},
+            startingNumberOfSegments: 5,
+            startingCords: {x:12, y: 9},
+            currentCords: {x:12, y: 9},
             headSprites: ['snakeHeadUp', 'snakeHeadRight', 'snakeHeadDown', 'snakeHeadLeft'],
             tailSprites: ['snakeTailUp','snakeTailRight','snakeTailDown','snakeTailLeft'],
         };
@@ -79,6 +82,19 @@ export class Game extends Phaser.Scene {
 
     init() {
         // Initialize scene
+        this.isGameOver = false;
+        this.gameTimer = this.gameTimerStartingValue;
+        this.inputLog = [];
+        this.idMakerCount = 1;
+        this.fieldStartingPosition = {
+            x: (this.sys.canvas.width * .5) - (this.wallWidth * this.playingField.width * .5),
+            y: (this.sys.canvas.height * .5) - (this.wallWidth * this.playingField.height * .5)
+        };
+        this.isPaused = true;
+
+        this.isAppleReadyUp = false;
+        this.isSnakeReadyUp = false;
+        
     }
 
     preload() {
@@ -113,10 +129,7 @@ export class Game extends Phaser.Scene {
 
     create() {
         // Create game objects
-        this.isGameOver = false;
-        this.gameTimer = this.gameTimerStartingValue;
-        this.inputLog = [];
-        this.idMakerCount = 1;
+        
 
         
 
@@ -215,6 +228,20 @@ export class Game extends Phaser.Scene {
                 //Cleans up the apples array destroying any that need it
                 this.DestroyApplesWhoNeedIt();
 
+                //Ready up the apple
+                    if(!this.isAppleReadyUp){
+                        this.isAppleReadyUp = true;
+                        
+                        //Set up ready message
+
+                        if(this.isSnakeReadyUp){
+                            this.isPaused = false;
+                        }
+                    }
+                
+                //Check for pause
+                if(this.isPaused) return;
+
                 if(!this.ComboManager(0)){
                     for(let apple of this.apples){
                         this.MoveApple(0,apple);
@@ -222,12 +249,16 @@ export class Game extends Phaser.Scene {
                     
                 }
                 
+                
 
             });
             down.on('down', event =>
             {
                 //Cleans up the apples array destroying any that need it
                 this.DestroyApplesWhoNeedIt();
+
+                //Check for pause
+                if(this.isPaused) return;
                 
                 if(!this.ComboManager(2)){
                     for(let apple of this.apples){
@@ -239,6 +270,9 @@ export class Game extends Phaser.Scene {
             {
                 //Cleans up the apples array destroying any that need it
                 this.DestroyApplesWhoNeedIt();
+
+                //Check for pause
+                if(this.isPaused) return;
                 
                 if(!this.ComboManager(1)){
                     for(let apple of this.apples){
@@ -251,6 +285,9 @@ export class Game extends Phaser.Scene {
             {
                 //Cleans up the apples array destroying any that need it
                 this.DestroyApplesWhoNeedIt();
+
+                //Check for pause
+                if(this.isPaused) return;
                 
                 if(!this.ComboManager(3)){
                         for(let apple of this.apples){
@@ -285,8 +322,21 @@ export class Game extends Phaser.Scene {
 
         //Sanke input manager
          this.cursors = this.input.keyboard.createCursorKeys();
+         var upArrow = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
 
-         
+         upArrow.on('down', event =>
+         {
+            //Ready up the snake
+                    if(!this.isSnakeReadyUp){
+                        this.isSnakeReadyUp = true;
+                        
+                        //Set up ready message
+
+                        if(this.isAppleReadyUp){
+                            this.isPaused = false;
+                        }
+                    }
+         });
 
         //Create the timer text
             this.timerText = this.add.text(50, 5, this.timeMessage + Math.ceil(this.gameTimer), {
@@ -308,8 +358,10 @@ export class Game extends Phaser.Scene {
     
 
     update(time, delta){
-
         
+        
+        //Past this point will not update while paused
+        if(this.isPaused) return;
 
         this.time = time;
         
@@ -370,6 +422,8 @@ export class Game extends Phaser.Scene {
         //Check if control is being held
         //if(appleRefrence.isNoMoveBeingPressed) return;
 
+        let tagOfTargetSpot = this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection];
+
         //Check if the apple is allowed to move where it want to
         if(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection] != '0'){
             
@@ -379,8 +433,8 @@ export class Game extends Phaser.Scene {
                 collision.Kill();
             }
 
-            //If the apple if fragile then it will die if it tries to run into a wall or snake
-            if(appleRefrence.isFragile){
+            //If the apple if fragile then it will die if it tries to run another into anouther apple
+            if(appleRefrence.isFragile && !(tagOfTargetSpot == 'w' || tagOfTargetSpot == 's')){
                 
                 appleRefrence.Kill();
                 
