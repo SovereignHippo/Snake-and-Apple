@@ -4,13 +4,13 @@ export class Game extends Phaser.Scene {
         super('Game');
 
         this.playingField = {width: 18, height: 18};
-        this.wallWidth = 32;
+        this.wallWidth = 32; //AKA the grid cell size
         this.fieldStartingPosition;
         this.fieldColors = {colorA: 0x303070, colorB: 0x000000, wallColor: 0x808080}
         this.isGameOver;
         this.gameTimer;
         this.gameTimerStartingValue = 30;
-        this.gameTimeAddedOnKill = 5;
+        this.gameTimeAddedOnKill = 3;
         this.gameCurrentScore;
         this.idMakerCount;
         this.isPaused;
@@ -82,18 +82,18 @@ export class Game extends Phaser.Scene {
 
     init() {
         // Initialize scene
-        this.isGameOver = false;
-        this.gameTimer = this.gameTimerStartingValue;
-        this.inputLog = [];
-        this.idMakerCount = 1;
-        this.fieldStartingPosition = {
-            x: (this.sys.canvas.width * .5) - (this.wallWidth * this.playingField.width * .5),
-            y: (this.sys.canvas.height * .5) - (this.wallWidth * this.playingField.height * .5)
-        };
-        this.isPaused = true;
+            this.isGameOver = false;
+            this.gameTimer = this.gameTimerStartingValue;
+            this.inputLog = [];
+            this.idMakerCount = 1;
+            this.fieldStartingPosition = {
+                x: (this.sys.canvas.width * .5) - (this.wallWidth * this.playingField.width * .5),
+                y: (this.sys.canvas.height * .5) - (this.wallWidth * this.playingField.height * .5)
+            };
+            this.isPaused = true;
 
-        this.isAppleReadyUp = false;
-        this.isSnakeReadyUp = false;
+            this.isAppleReadyUp = false;
+            this.isSnakeReadyUp = false;
         
     }
 
@@ -228,16 +228,7 @@ export class Game extends Phaser.Scene {
                 //Cleans up the apples array destroying any that need it
                 this.DestroyApplesWhoNeedIt();
 
-                //Ready up the apple
-                    if(!this.isAppleReadyUp){
-                        this.isAppleReadyUp = true;
-                        
-                        //Set up ready message
-
-                        if(this.isSnakeReadyUp){
-                            this.isPaused = false;
-                        }
-                    }
+                
                 
                 //Check for pause
                 if(this.isPaused) return;
@@ -271,8 +262,24 @@ export class Game extends Phaser.Scene {
                 //Cleans up the apples array destroying any that need it
                 this.DestroyApplesWhoNeedIt();
 
+                //Ready up the apple
+                    if(!this.isAppleReadyUp){
+                        this.isAppleReadyUp = true;
+                        this.appleReadyText?.destroy();
+                        this.appleReadyStatusText.text = "Ready";
+                        this.appleReadyStatusText.setColor('#00ff00');
+                        
+                        //Set up ready message
+
+                        if(this.isSnakeReadyUp){
+                            this.isPaused = false;
+                            this.appleReadyStatusText?.destroy();
+                            this.snakeReadyStatusText?.destroy();
+                        }
+                    }
+
                 //Check for pause
-                if(this.isPaused) return;
+                    if(this.isPaused) return;
                 
                 if(!this.ComboManager(1)){
                     for(let apple of this.apples){
@@ -329,11 +336,16 @@ export class Game extends Phaser.Scene {
             //Ready up the snake
                     if(!this.isSnakeReadyUp){
                         this.isSnakeReadyUp = true;
+                        this.snakeReadyText?.destroy();
+                        this.snakeReadyStatusText.text = "Ready";
+                        this.snakeReadyStatusText.setColor('#00ff00');
                         
                         //Set up ready message
 
                         if(this.isAppleReadyUp){
                             this.isPaused = false;
+                            this.snakeReadyStatusText?.destroy();
+                            this.appleReadyStatusText?.destroy();
                         }
                     }
          });
@@ -351,6 +363,28 @@ export class Game extends Phaser.Scene {
             stroke: '#000000', strokeThickness: 8,
             align: 'center'
         })
+         //Create the Apple Ready Up text
+            this.appleReadyText = this.add.text(40, this.sys.canvas.height * .5 - 40, "Press \'D\' to ready up", {
+            fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 8,
+            align: 'center'
+            })
+            this.appleReadyStatusText = this.add.text(40, this.sys.canvas.height * .5 - 20, "Not Ready", {
+                fontFamily: 'Arial Black', fontSize: 20, color: '#ff0000',
+                stroke: '#000000', strokeThickness: 8,
+                align: 'center'
+            })
+         //Create the Snake Ready Up text
+            this.snakeReadyText = this.add.text(925, this.sys.canvas.height * .5 - 40, "Press \'Left Arrow\' to ready up", {
+                fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff',
+                stroke: '#000000', strokeThickness: 8,
+                align: 'center'
+            })
+            this.snakeReadyStatusText = this.add.text(925, this.sys.canvas.height * .5 - 20, "Not Ready", {
+                fontFamily: 'Arial Black', fontSize: 20, color: '#ff0000',
+                stroke: '#000000', strokeThickness: 8,
+                align: 'center'
+            })
         //console.log(this.field);
    
     }
@@ -473,8 +507,8 @@ export class Game extends Phaser.Scene {
         //Aditional destroy apples check
             this.DestroyApplesWhoNeedIt();
 
-         // Update current direction
-        this.snake.direction = this.snake.nextDirection;
+        // Update current direction
+            this.snake.direction = this.snake.nextDirection;
 
         // Calculate new head position
         const head = this.snake.body[0].object;
