@@ -660,6 +660,7 @@ export class Game extends Phaser.Scene {
         if(this.isGameOver) return;
         this.isGameOver = true;
         console.log('Game Over!');
+        this.scene.start("GameOver",{score: this.gameCurrentScore});
     }
 
     ComboManager(direction){
