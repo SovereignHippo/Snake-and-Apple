@@ -31,7 +31,7 @@ export class Game extends Phaser.Scene {
             startingCords: {x:2, y:9},
             currentCords: {x:2, y:9},
             isOnMovementCoolDown: false,
-            movementCoolDown:60,
+            movementCoolDown:0,
             movementCoolDownTime:0,
             object: undefined,
             sprites: ['appleUp', 'appleRight', 'appleDown', 'appleLeft'],
@@ -85,6 +85,7 @@ export class Game extends Phaser.Scene {
             this.isGameOver = false;
             this.gameTimer = this.gameTimerStartingValue;
             this.inputLog = [];
+            this.time = 0;
             this.idMakerCount = 1;
             this.fieldStartingPosition = {
                 x: (this.sys.canvas.width * .5) - (this.wallWidth * this.playingField.width * .5),
@@ -396,8 +397,9 @@ export class Game extends Phaser.Scene {
         
         //Past this point will not update while paused
         if(this.isPaused) return;
-
-        this.time = time;
+        console.log(this.time);
+        //console.log(delta);
+        this.time = this.time + delta;
         
         
         if (this.cursors.left.isDown && this.snake.direction !== 'right') {
@@ -481,8 +483,10 @@ export class Game extends Phaser.Scene {
         //Check if the apple is allowed to move
         if(!appleRefrence.canMove) return;
 
+        
         //Moves Apple
         if(this.time >= appleRefrence.movementCoolDownTime + appleRefrence.movementCoolDown){
+            appleRefrence.movementCoolDownTime = this.time;
             //Physically move the apple if visable
             appleRefrence.object?.destroy();
             if(appleRefrence.isVisible && !appleRefrence.isReadyToBeDeleted){
@@ -660,7 +664,7 @@ export class Game extends Phaser.Scene {
         if(this.isGameOver) return;
         this.isGameOver = true;
         console.log('Game Over!');
-        this.scene.start("GameOver",{score: this.gameCurrentScore});
+        //this.scene.start("GameOver",{score: this.gameCurrentScore});
     }
 
     ComboManager(direction){
