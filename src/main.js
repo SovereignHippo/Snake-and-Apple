@@ -13,22 +13,16 @@ const config = {
     backgroundColor: '#000000',
     pixelArt: false,
     scene: [
-        
+        Start,
         Game,
-        GameOver
+        GameOver,
+        
     ],
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    // plugins:{
-    //     global: [{
-    //         key:'rexBBCodeTextPlugin',
-    //         plugin:BBCodeTextPlugin,
-    //         start: true
-    //     },
-    //     ]
-    // },
+    
 }
 
 new Phaser.Game(config);

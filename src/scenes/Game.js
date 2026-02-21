@@ -5,8 +5,7 @@ export class Game extends Phaser.Scene {
     constructor() {
         super('Game');
         
-
-        this.isDebugingOn = true;
+        this.isDebugingOn = false;
 
         this.playingField = {width: 18, height: 18};
         this.wallWidth = 32; //AKA the grid cell size
@@ -97,6 +96,7 @@ export class Game extends Phaser.Scene {
                 y: (this.sys.canvas.height * .5) - (this.wallWidth * this.playingField.height * .5)
             };
             this.isPaused = true;
+            this.gameCurrentScore = 0;
 
             this.isAppleReadyUp = false;
             this.isSnakeReadyUp = false;
@@ -104,9 +104,8 @@ export class Game extends Phaser.Scene {
     }
 
     preload() {
-        //Plug ins
-        this.load.plugin('rexbbcodetextplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexbbcodetextplugin.min.js', true);
-
+        //Plugins
+        
         // Load assets
         this.load.image('appleUp', 'assets/appleSprites/apple0.png');
         this.load.image('appleRight', 'assets/appleSprites/apple1.png');
@@ -369,7 +368,6 @@ export class Game extends Phaser.Scene {
                 align: 'center'
             })
             // //Create the score text
-            //     this.gameCurrentScore = 0;
             //     this.scoreText = this.add.text(1100, 5, this.scoreMessage + Math.ceil(this.gameCurrentScore), {
             //     fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
             //     stroke: '#000000', strokeThickness: 8,
@@ -692,7 +690,7 @@ export class Game extends Phaser.Scene {
         if(this.isGameOver) return;
         this.isGameOver = true;
         console.log('Game Over!');
-        //this.scene.start("GameOver",{score: this.gameCurrentScore});
+        this.scene.start("GameOver",{score: this.gameCurrentScore});
     }
 
     ComboManager(direction){

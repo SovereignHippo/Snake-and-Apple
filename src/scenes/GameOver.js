@@ -11,7 +11,7 @@ export class GameOver extends Phaser.Scene {
 
     preload ()
     {
-        //this.load.image('logo', 'assets/phaser.png');
+        
     }
 
     init(data){
