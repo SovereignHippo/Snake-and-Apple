@@ -79,6 +79,8 @@ export class Game extends Phaser.Scene {
             tailSprites: ['snakeTailUp','snakeTailRight','snakeTailDown','snakeTailLeft'],
         };
 
+        
+
 
         this.time;
         
@@ -86,20 +88,8 @@ export class Game extends Phaser.Scene {
 
     init() {
         // Initialize scene
-            this.isGameOver = false;
-            this.gameTimer = this.gameTimerStartingValue;
-            this.inputLog = [];
-            this.time = 0;
-            this.idMakerCount = 1;
-            this.fieldStartingPosition = {
-                x: (this.sys.canvas.width * .5) - (this.wallWidth * this.playingField.width * .5),
-                y: (this.sys.canvas.height * .5) - (this.wallWidth * this.playingField.height * .5)
-            };
-            this.isPaused = true;
-            this.gameCurrentScore = 0;
-
-            this.isAppleReadyUp = false;
-            this.isSnakeReadyUp = false;
+           
+           
         
     }
 
@@ -138,8 +128,22 @@ export class Game extends Phaser.Scene {
 
     create() {
         // Create game objects
-        
+         this.isGameOver = false;
+         this.gameTimer = this.gameTimerStartingValue;
+            this.inputLog = [];
+            this.time = 0;
+            this.idMakerCount = 1;
+            this.fieldStartingPosition = {
+                x: (this.sys.canvas.width * .5) - (this.wallWidth * this.playingField.width * .5),
+                y: (this.sys.canvas.height * .5) - (this.wallWidth * this.playingField.height * .5)
+            };
+            this.isPaused = true;
+            this.gameCurrentScore = 0;
 
+            this.isAppleReadyUp = false;
+            this.isSnakeReadyUp = false;
+
+            
         
 
         //Build the field
@@ -396,11 +400,13 @@ export class Game extends Phaser.Scene {
                     align: 'center'
                 })
             //create the debugger text
+            if(this.isDebugingOn){
                 this.debugText = this.add.rexBBCodeText(this.sys.canvas.width * .8, this.sys.canvas.height * .1, "Debugging [color=green]ON[/color]", {
                     fontFamily: 'Arial Black', fontSize: 20, color: '#00ffff',
                     stroke: '#000000', strokeThickness: 8,
                     align: 'left'
                 })
+            }
                 
 
         //console.log(this.field);
@@ -446,6 +452,7 @@ export class Game extends Phaser.Scene {
 
 
         //Update the debugger text
+        if(this.isDebugingOn){
             let fps = 1/(delta / 1000).toFixed(2);
 
             let fpsColor = "#00FF00";
@@ -458,6 +465,8 @@ export class Game extends Phaser.Scene {
 
             this.debugText.text = 
             `Time: [color=#00FF00]${(time/1000).toFixed(2)}s[/color]\nDelta: [color=${fpsColor}]${delta.toFixed(2)}ms[/color]\nFPS: [color=${fpsColor}]${fps}[/color]`;
+        }
+       
     }
 
 
@@ -589,7 +598,7 @@ export class Game extends Phaser.Scene {
                     isEating = true;
                 break;
                 case 'w':
-                    this.GameOver();
+                   this.GameOver();
                     return;
                 case 's':
                     this.GameOver();
@@ -692,6 +701,7 @@ export class Game extends Phaser.Scene {
         console.log('Game Over!');
         this.scene.start("GameOver",{score: this.gameCurrentScore});
     }
+        
 
     ComboManager(direction){
         //Manges the combo both input and and doing actions
@@ -962,6 +972,8 @@ export class Game extends Phaser.Scene {
                 rate: (Math.random() * .3) + .9,
             });
     }
+
+    
 
 
 }
