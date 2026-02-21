@@ -17,7 +17,7 @@ export class Game extends Phaser.Scene {
         this.isAppleReadyUp;
         this.isSnakeReadyUp;
 
-        this.scoreMessage = "Score: ";
+        //this.scoreMessage = "Score: ";
         this.timeMessage = "Time: ";
 
         this.inputLog = [];
@@ -123,6 +123,7 @@ export class Game extends Phaser.Scene {
         this.load.image('snakeTailDown','assets/snakeSprites/tail2.png');
 
         this.load.audio('smokePoofSound','assets/sounds/NarutoSmokeSound.mp3');
+        this.load.audio('appleCrunchSound','assets/sounds/AppleCrunchSound.wav');
 
         this.load.image('smoke','assets/particles/whitePuff.png');
         this.load.image('whisp','assets/particles/blackSmoke.png')
@@ -357,13 +358,13 @@ export class Game extends Phaser.Scene {
             stroke: '#000000', strokeThickness: 8,
             align: 'center'
         })
-        //Create the score text
-            this.gameCurrentScore = 0;
-            this.scoreText = this.add.text(1100, 5, this.scoreMessage + Math.ceil(this.gameCurrentScore), {
-            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        })
+        // //Create the score text
+        //     this.gameCurrentScore = 0;
+        //     this.scoreText = this.add.text(1100, 5, this.scoreMessage + Math.ceil(this.gameCurrentScore), {
+        //     fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
+        //     stroke: '#000000', strokeThickness: 8,
+        //     align: 'center'
+        // })
          //Create the Apple Ready Up text
             this.appleReadyText = this.add.text(40, this.sys.canvas.height * .5 - 40, "Press \'D\' to ready up", {
             fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff',
@@ -397,23 +398,25 @@ export class Game extends Phaser.Scene {
         
         //Past this point will not update while paused
         if(this.isPaused) return;
-        console.log(this.time);
-        //console.log(delta);
+        
         this.time = this.time + delta;
         
         
-        if (this.cursors.left.isDown && this.snake.direction !== 'right') {
-            this.snake.nextDirection = 'left';
-        } else if (this.cursors.right.isDown && this.snake.direction !== 'left') {
-            this.snake.nextDirection = 'right';
-        } else if (this.cursors.up.isDown && this.snake.direction !== 'down') {
-            this.snake.nextDirection = 'up';
-        } else if (this.cursors.down.isDown && this.snake.direction !== 'up') {
-            this.snake.nextDirection = 'down';
-        }
+        
 
         // Move snake at fixed intervals
         if (time >= this.snake.lastMoveTime + this.snake.speed) {
+
+            if (this.cursors.left.isDown && this.snake.direction !== 'right') {
+                this.snake.nextDirection = 'left';
+            } else if (this.cursors.right.isDown && this.snake.direction !== 'left') {
+                this.snake.nextDirection = 'right';
+            } else if (this.cursors.up.isDown && this.snake.direction !== 'down') {
+                this.snake.nextDirection = 'up';
+            } else if (this.cursors.down.isDown && this.snake.direction !== 'up') {
+                this.snake.nextDirection = 'down';
+            }
+
             this.MoveSnake();
             this.snake.lastMoveTime = time;
         }
@@ -428,7 +431,7 @@ export class Game extends Phaser.Scene {
     }
 
 
-    MoveApple(direction, appleRefrence){
+    MoveApple(direction, appleRefrence, numberOfSpacesToMove = 1){
         //if(this.isGameOver) return;
 
        
@@ -440,23 +443,23 @@ export class Game extends Phaser.Scene {
 
         switch(direction){
             case 0:
-                yDirection = -1;
+                yDirection = -numberOfSpacesToMove;
                 break;
             case 1:
-                xDirection = 1;
+                xDirection = numberOfSpacesToMove;
                 break;
             case 2:
-                yDirection = 1;
+                yDirection = numberOfSpacesToMove;
                 break;
             case 3:
-                xDirection = -1;
+                xDirection = -numberOfSpacesToMove;
                 break;
         }
 
         //Sets apple's sprite based on direction
 
         //Check if control is being held
-        //if(appleRefrence.isNoMoveBeingPressed) return;
+        if(appleRefrence.isNoMoveBeingPressed) return;
 
         let tagOfTargetSpot = this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection];
 
@@ -631,16 +634,8 @@ export class Game extends Phaser.Scene {
                 this.snake.body[this.snake.body.length - 1].object = this.add.sprite(newTailX, newTailY, this.snake.tailSprites[tailDirection]);
             }else{
                 //Apple has been eaten
-                this.mainApple.object.destroy();
-                this.mainApple.Kill();
-                this.inputLog = [];
-                this.RespawnApple();
-                //Give more time
-                this.gameTimer += this.gameTimeAddedOnKill;
-                //Update Score and score text
-                this.gameCurrentScore++;
-                this.scoreText.text = this.scoreMessage + Math.ceil(this.gameCurrentScore);
-                //Need to add logic
+                this.EatMainApple();
+                
             }
         
     }
@@ -671,7 +666,7 @@ export class Game extends Phaser.Scene {
         //Manges the combo both input and and doing actions
         //returns true if this function handles movement, false if it does not
 
-        const inputLogMaxLength = 10;
+        const inputLogMaxLength = 20;
         const currentAppleList = this.apples.slice();
 
         
@@ -699,9 +694,10 @@ export class Game extends Phaser.Scene {
             this.inputLog.shift();
         }
 
-        if(this.inputLog.slice(-9,-1).join("") == "WWSSADAD"){
+        //Clone Jitsu
+            if(this.inputLog.slice(-9,-1).join("") == "WWSSADAD"){
 
-            //Clone Jitsu
+            
                 for(let apple of currentAppleList){
                     if(!apple.canPerformMagic){
                         this.MoveApple(direction,apple);
@@ -784,7 +780,38 @@ export class Game extends Phaser.Scene {
                 
             }
                 
+        //Teleport Dash
+            if(this.inputLog.slice(-6,-2).join("") == "WASD" || this.inputLog.slice(-6,-2).join("") == "WDSA"){
+                
+                for(let apple of currentAppleList){
+                    
+                    if(!apple.canPerformMagic){ //Check if they can perform magic or not
+                        this.MoveApple(direction,apple);
+                        continue;
+                    };
+
+                    //if the last two inputs are equal, do the teleport dash else move normally
+                    if(this.inputLog.at(-2) === this.inputLog.at(-1)){
+                       
+                        //Play the sound
+                        this.sound.play("smokePoofSound" ,{
+                            volume: .25,
+                        });
+
+                        //Smoke bomb effect
+                        this.CreateSmokeEffect(apple.currentCords.x,apple.currentCords.y,.25);
+
+                        this.MoveApple(direction,apple,2);
+
+                    }else{
+                        this.MoveApple(direction,apple);
+                    }
+
+                }
+                return true;//return true because this combo handles the movement
+            }
         
+        //
         
         
         return false;
@@ -846,12 +873,12 @@ export class Game extends Phaser.Scene {
                     
     }
 
-    CreateSmokeEffect(xCord, yCord){
+    CreateSmokeEffect(xCord, yCord, maxSize = .5){
         let emitter = this.add.particles(this.fieldStartingPosition.x + (xCord * this.wallWidth),this.fieldStartingPosition.y + (yCord * this.wallWidth),'smoke', {
             speed: 2,
             lifespan: 400,
             quantity: 1,
-            scale: {start: .1, end: .5,ease: 'Expo.easeOut'},
+            scale: {start: .1, end: maxSize,ease: 'Expo.easeOut'},
             emitting: true,
             duration: 100,
             alpha: {start: 1, end: 0,ease: 'Expo.easeIn'},
@@ -881,7 +908,25 @@ export class Game extends Phaser.Scene {
         //Play the sound 
             this.sound.play(sound ,{
                 volume: .4,
-                delay: Math.random() * .5,
+                delay: Math.random() * .3,
+            });
+    }
+
+    EatMainApple(){
+        this.mainApple.object.destroy();
+        this.mainApple.Kill();
+        this.inputLog = [];
+        this.RespawnApple();
+        //Give more time
+        this.gameTimer += this.gameTimeAddedOnKill;
+        //Update Score and score text
+        this.gameCurrentScore++;
+        //this.scoreText.text = this.scoreMessage + Math.ceil(this.gameCurrentScore);
+        //Need to add logic // I dont rember what logic he is talking about
+
+        //Play the sound 
+            this.sound.play("appleCrunchSound" ,{
+                volume: .4,
             });
     }
 
