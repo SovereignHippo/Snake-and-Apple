@@ -1,6 +1,7 @@
 import { Start } from './scenes/Start.js';
 import {Game} from './scenes/Game.js';
 import {GameOver} from './scenes/GameOver.js';
+//import BBCodeTextPlugin from '/plugins/bbcodetextplugin.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -20,6 +21,14 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
+    // plugins:{
+    //     global: [{
+    //         key:'rexBBCodeTextPlugin',
+    //         plugin:BBCodeTextPlugin,
+    //         start: true
+    //     },
+    //     ]
+    // },
 }
 
 new Phaser.Game(config);

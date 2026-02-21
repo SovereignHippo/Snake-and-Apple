@@ -1,7 +1,12 @@
 // "Every great game begins with a single scene. Let's make this one unforgettable!"
+
 export class Game extends Phaser.Scene {
+    
     constructor() {
         super('Game');
+        
+
+        this.isDebugingOn = true;
 
         this.playingField = {width: 18, height: 18};
         this.wallWidth = 32; //AKA the grid cell size
@@ -99,6 +104,9 @@ export class Game extends Phaser.Scene {
     }
 
     preload() {
+        //Plug ins
+        this.load.plugin('rexbbcodetextplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexbbcodetextplugin.min.js', true);
+
         // Load assets
         this.load.image('appleUp', 'assets/appleSprites/apple0.png');
         this.load.image('appleRight', 'assets/appleSprites/apple1.png');
@@ -331,9 +339,10 @@ export class Game extends Phaser.Scene {
 
         //Sanke input manager
          this.cursors = this.input.keyboard.createCursorKeys();
-         var upArrow = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+         var leftArrow = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
 
-         upArrow.on('down', event =>
+        //On Left arrow click
+         leftArrow.on('down', event =>
          {
             //Ready up the snake
                     if(!this.isSnakeReadyUp){
@@ -352,41 +361,50 @@ export class Game extends Phaser.Scene {
                     }
          });
 
-        //Create the timer text
-            this.timerText = this.add.text(50, 5, this.timeMessage + Math.ceil(this.gameTimer), {
-            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        })
-        // //Create the score text
-        //     this.gameCurrentScore = 0;
-        //     this.scoreText = this.add.text(1100, 5, this.scoreMessage + Math.ceil(this.gameCurrentScore), {
-        //     fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
-        //     stroke: '#000000', strokeThickness: 8,
-        //     align: 'center'
-        // })
-         //Create the Apple Ready Up text
-            this.appleReadyText = this.add.text(40, this.sys.canvas.height * .5 - 40, "Press \'D\' to ready up", {
-            fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-            })
-            this.appleReadyStatusText = this.add.text(40, this.sys.canvas.height * .5 - 20, "Not Ready", {
-                fontFamily: 'Arial Black', fontSize: 20, color: '#ff0000',
+        //Create all the texts
+            //Create the timer text
+                this.timerText = this.add.text(50, 5, this.timeMessage + Math.ceil(this.gameTimer), {
+                fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
                 stroke: '#000000', strokeThickness: 8,
                 align: 'center'
             })
-         //Create the Snake Ready Up text
-            this.snakeReadyText = this.add.text(925, this.sys.canvas.height * .5 - 40, "Press \'Left Arrow\' to ready up", {
+            // //Create the score text
+            //     this.gameCurrentScore = 0;
+            //     this.scoreText = this.add.text(1100, 5, this.scoreMessage + Math.ceil(this.gameCurrentScore), {
+            //     fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
+            //     stroke: '#000000', strokeThickness: 8,
+            //     align: 'center'
+            // })
+            //Create the Apple Ready Up text
+                this.appleReadyText = this.add.text(40, this.sys.canvas.height * .5 - 40, "Press \'D\' to ready up", {
                 fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff',
                 stroke: '#000000', strokeThickness: 8,
                 align: 'center'
-            })
-            this.snakeReadyStatusText = this.add.text(925, this.sys.canvas.height * .5 - 20, "Not Ready", {
-                fontFamily: 'Arial Black', fontSize: 20, color: '#ff0000',
-                stroke: '#000000', strokeThickness: 8,
-                align: 'center'
-            })
+                })
+                this.appleReadyStatusText = this.add.text(40, this.sys.canvas.height * .5 - 20, "Not Ready", {
+                    fontFamily: 'Arial Black', fontSize: 20, color: '#ff0000',
+                    stroke: '#000000', strokeThickness: 8,
+                    align: 'center'
+                })
+            //Create the Snake Ready Up text
+                this.snakeReadyText = this.add.text(925, this.sys.canvas.height * .5 - 40, "Press \'Left Arrow\' to ready up", {
+                    fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff',
+                    stroke: '#000000', strokeThickness: 8,
+                    align: 'center'
+                })
+                this.snakeReadyStatusText = this.add.text(925, this.sys.canvas.height * .5 - 20, "Not Ready", {
+                    fontFamily: 'Arial Black', fontSize: 20, color: '#ff0000',
+                    stroke: '#000000', strokeThickness: 8,
+                    align: 'center'
+                })
+            //create the debugger text
+                this.debugText = this.add.rexBBCodeText(this.sys.canvas.width * .8, this.sys.canvas.height * .1, "Debugging [color=green]ON[/color]", {
+                    fontFamily: 'Arial Black', fontSize: 20, color: '#00ffff',
+                    stroke: '#000000', strokeThickness: 8,
+                    align: 'left'
+                })
+                
+
         //console.log(this.field);
    
     }
@@ -428,11 +446,25 @@ export class Game extends Phaser.Scene {
             this.timerText.text = this.timeMessage + Math.ceil(this.gameTimer);
        
 
+
+        //Update the debugger text
+            let fps = 1/(delta / 1000).toFixed(2);
+
+            let fpsColor = "#00FF00";
+
+            if(fps < 30){
+                fpsColor = "#FFFF00";
+            }else if(fps < 15){
+                fpsColor = "#FF0000";
+            }
+
+            this.debugText.text = 
+            `Time: [color=#00FF00]${(time/1000).toFixed(2)}s[/color]\nDelta: [color=${fpsColor}]${delta.toFixed(2)}ms[/color]\nFPS: [color=${fpsColor}]${fps}[/color]`;
     }
 
 
     MoveApple(direction, appleRefrence, numberOfSpacesToMove = 1){
-        //if(this.isGameOver) return;
+        if(this.isGameOver) return;
 
        
 
@@ -509,7 +541,7 @@ export class Game extends Phaser.Scene {
     }
 
     MoveSnake() {
-        //if(this.isGameOver) return;
+        if(this.isGameOver) return;
 
         //Aditional destroy apples check
             this.DestroyApplesWhoNeedIt();
@@ -656,6 +688,7 @@ export class Game extends Phaser.Scene {
     }
 
     GameOver(){
+        if(this.isDebugingOn) return;
         if(this.isGameOver) return;
         this.isGameOver = true;
         console.log('Game Over!');
@@ -927,6 +960,8 @@ export class Game extends Phaser.Scene {
         //Play the sound 
             this.sound.play("appleCrunchSound" ,{
                 volume: .4,
+                detune: (Math.random() * 20) + 40,
+                rate: (Math.random() * .3) + .9,
             });
     }
 
