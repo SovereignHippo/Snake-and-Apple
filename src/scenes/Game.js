@@ -4,7 +4,7 @@ export class Game extends Phaser.Scene {
     constructor() {
         super('Game');
         
-        this.isDebugingOn = true;
+        this.isDebugingOn = false;
 
         this.playingField = {width: 18, height: 18};
         this.wallWidth = 32; //AKA the grid cell size
@@ -466,10 +466,13 @@ export class Game extends Phaser.Scene {
         
         //Update Game Timer
             this.gameTimer -= (delta/1000);   
-            if(this.gameTimer < 0) this.gameTimer = 0;
+            if(this.gameTimer < 0){
+            this.GameOver();
+            this.gameTimer = 0;
+            }
             this.timerText.text = this.timeMessage + Math.ceil(this.gameTimer);
-       
 
+            
 
         //Update the debugger text
         if(this.isDebugingOn){
