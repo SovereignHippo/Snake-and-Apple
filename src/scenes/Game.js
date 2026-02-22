@@ -1,11 +1,10 @@
 // "Every great game begins with a single scene. Let's make this one unforgettable!"
-
 export class Game extends Phaser.Scene {
     
     constructor() {
         super('Game');
         
-        this.isDebugingOn = false;
+        this.isDebugingOn = true;
 
         this.playingField = {width: 18, height: 18};
         this.wallWidth = 32; //AKA the grid cell size
@@ -41,26 +40,47 @@ export class Game extends Phaser.Scene {
             sprites: ['appleUp', 'appleRight', 'appleDown', 'appleLeft'],
             directionOffSet: 0,
             parent: undefined,
-            children: new Array(),
+            children: [],
             isVisible: true,
             canMove: true,
             makeParentInvisible: false,
+            makesParentInmovable: false,
+            makesParentMagiclyInept: false,
             isFragile: false,
             isReadyToBeDeleted: false,
             canPerformMagic: true,
             deathSound: "smokePoofSound",
             deathEffect: "whisp",
-            makeVisible: function(){
+            checkVisibility: function(scene){
+                
                 for(let child of this.children){
                     if(child.makeParentInvisible){
                         return;
                     }
                 }
-                if(!isVisible){
-                    this.object = this.add.sprite(this.fieldStartingPosition.x + (this.currentCords.x * this.wallWidth),this.fieldStartingPosition.y + (this.currentCords.y * this.wallWidth),this.sprites[2]);
+                if(!this.isVisible && this.object?.active == false){
+                    this.object = scene.add.sprite(scene.fieldStartingPosition.x + (this.currentCords.x * scene.wallWidth),scene.fieldStartingPosition.y + (this.currentCords.y * scene.wallWidth),this.sprites[2]);
                 }
-                isVisible = true;
-            }
+                this.isVisible = true;
+            },
+            checkMovability: function(){
+                for(let child of this.children){
+                    if(child.makesParentInmovable){
+                        return;
+                    }
+                }
+                
+                this.canMove = true;
+            },
+            checkMagicalAbility: function(){
+                for(let child of this.children){
+                    if(child.makesParentMagiclyInept){
+                        return;
+                    }
+                }
+                
+                this.canPerformMagic = true;
+            },
 
             
         };
@@ -239,7 +259,7 @@ export class Game extends Phaser.Scene {
             up.on('down', event =>
             {
                 //Cleans up the apples array destroying any that need it
-                this.DestroyApplesWhoNeedIt();
+                //this.DestroyApplesWhoNeedIt();
 
                 
                 
@@ -259,7 +279,7 @@ export class Game extends Phaser.Scene {
             down.on('down', event =>
             {
                 //Cleans up the apples array destroying any that need it
-                this.DestroyApplesWhoNeedIt();
+                //this.DestroyApplesWhoNeedIt();
 
                 //Check for pause
                 if(this.isPaused) return;
@@ -273,7 +293,7 @@ export class Game extends Phaser.Scene {
             right.on('down', event =>
             {
                 //Cleans up the apples array destroying any that need it
-                this.DestroyApplesWhoNeedIt();
+                //this.DestroyApplesWhoNeedIt();
 
                 //Ready up the apple
                     if(!this.isAppleReadyUp){
@@ -304,7 +324,7 @@ export class Game extends Phaser.Scene {
             left.on('down', event =>
             {
                 //Cleans up the apples array destroying any that need it
-                this.DestroyApplesWhoNeedIt();
+                //this.DestroyApplesWhoNeedIt();
 
                 //Check for pause
                 if(this.isPaused) return;
@@ -470,10 +490,11 @@ export class Game extends Phaser.Scene {
     }
 
 
-    MoveApple(direction, appleRefrence, numberOfSpacesToMove = 1){
+    MoveApple(direction, appleRefrence, numberOfSpacesToMove = 1, ctrOveride = false){
         if(this.isGameOver) return;
 
-       
+        //Check if the apple is allowed to move
+        if(!appleRefrence.canMove) return;
 
         let xDirection = 0;
         let yDirection = 0;
@@ -498,32 +519,37 @@ export class Game extends Phaser.Scene {
         //Sets apple's sprite based on direction
 
         //Check if control is being held
-        if(appleRefrence.isNoMoveBeingPressed) return;
+        if(!ctrOveride){
+            if(appleRefrence.isNoMoveBeingPressed) return;
+        }
 
         let tagOfTargetSpot = this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection];
 
         //Check if the apple is allowed to move where it want to
-        if(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection] != '0'){
+        if(tagOfTargetSpot != '0'){
             
             //Kills the thing this apple collides with if fragile
-            let collision = this.GetAppleWithId(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection]);
-            if(collision?.isFragile){
+            //let collision = this.GetAppleWithId(this.field[appleRefrence.currentCords.x + xDirection][appleRefrence.currentCords.y + yDirection]);
+            let collision = this.GetAppleWithId(tagOfTargetSpot);
+            if(collision?.isFragile && collision?.isVisible){
                 collision.Kill();
             }
 
-            //If the apple if fragile then it will die if it tries to run another into anouther apple
-            if(appleRefrence.isFragile && !(tagOfTargetSpot == 'w' || tagOfTargetSpot == 's')){
+            //If the apple if fragile then it will die if it tries to run another into another apple as long as that apple is visible
+            if(appleRefrence.isFragile && !(tagOfTargetSpot == 'w' || tagOfTargetSpot == 's') && collision?.isVisible){
                 
                 appleRefrence.Kill();
                 
             }
+            console.log(`Id: ${appleRefrence.id} - isFragile: ${appleRefrence.isFragile} - target spot: ${!(tagOfTargetSpot == 'w' || tagOfTargetSpot == 's')} - col vis: ${collision?.isVisible}`)
+            
 
             return;
+            
 
         };
         
-        //Check if the apple is allowed to move
-        if(!appleRefrence.canMove) return;
+        
 
         
         //Moves Apple
@@ -550,8 +576,8 @@ export class Game extends Phaser.Scene {
     MoveSnake() {
         if(this.isGameOver) return;
 
-        //Aditional destroy apples check
-            this.DestroyApplesWhoNeedIt();
+        //run game tick update
+           this.GameTickUpdate();
 
         // Update current direction
             this.snake.direction = this.snake.nextDirection;
@@ -740,7 +766,7 @@ export class Game extends Phaser.Scene {
 
             
                 for(let apple of currentAppleList){
-                    if(!apple.canPerformMagic){
+                    if(!apple.canPerformMagic || !apple.canMove){
                         this.MoveApple(direction,apple);
                         continue;
                     };
@@ -775,7 +801,7 @@ export class Game extends Phaser.Scene {
                             child.Kill();
                         }
 
-                        this.object.destroy();
+                        this.object?.destroy();
 
                         
                         
@@ -826,7 +852,7 @@ export class Game extends Phaser.Scene {
                 
                 for(let apple of currentAppleList){
                     
-                    if(!apple.canPerformMagic){ //Check if they can perform magic or not
+                    if(!apple.canPerformMagic || !apple.canMove){ //Check if they can perform magic or not
                         this.MoveApple(direction,apple);
                         continue;
                     };
@@ -852,7 +878,73 @@ export class Game extends Phaser.Scene {
                 return true;//return true because this combo handles the movement
             }
         
-        //
+        //Astral Projection
+            if(this.inputLog.slice(-7,-1).join("") == "SSADWW" ){
+
+                for(let apple of currentAppleList){
+                    
+                    if(!apple.canPerformMagic || !apple.canMove){ //Check if they can perform magic or not
+                        this.MoveApple(direction,apple);
+                        continue;
+                    };
+
+                    var xDirecton = 0;
+                    var yDirection = 0;
+                    var newDirection = (direction + apple.directionOffSet)%4;
+                    switch(newDirection){
+                        case 0:
+                            yDirection = -1;
+                            break;
+                        case 1:
+                            xDirecton = 1;
+                            break;
+                        case 2:
+                            yDirection = 1;
+                            break;
+                        case 3: 
+                            xDirecton = -1;
+                            break;
+                    }
+
+                    //Check to be sure the spawn spot is valid
+                    if(this.field[apple.currentCords.x + xDirecton][apple.currentCords.y + yDirection] != "0") continue;
+
+                    apple.isVisible = false;
+                    apple.object?.destroy();
+                    apple.canMove = false;
+
+                    function porjectionKillFunction(){
+                        //Projection Kill Function
+                        for(let i = 0; i < this.children.length; i++ ){
+
+                            this.children[i].Kill();
+            
+                        }
+                        
+
+                        this.object?.destroy();
+                        
+                        
+                        for(let i = 0; i < this.parent.children.length; i++ ){
+                            if(this.parent.children[i].id == this.id){
+                                this.parent.children.splice(i,1);
+                                break;
+                            }
+                        }
+
+                      
+                        //Makes it ready to be deleted next iteration
+                        this.isReadyToBeDeleted = true;
+                    }
+
+                    this.SummonNewApple(apple.currentCords.x + xDirecton,apple.currentCords.y + yDirection,porjectionKillFunction,
+                    apple,apple.directionOffSet,true,true,apple.isFragile,true,newDirection,true,true)
+
+                }
+
+                return true;
+
+            }
         
         
         return false;
@@ -890,7 +982,7 @@ export class Game extends Phaser.Scene {
         return this.idMakerCount.toString();
     }
 
-    SummonNewApple(xCordinante, yCordinante,killFunction,parentApple,offSetValue = 0,visibility = true,movability = true,fragility = false,isMagical = true,sprite = 2){
+    SummonNewApple(xCordinante, yCordinante,killFunction,parentApple,offSetValue = 0,visibility = true,movability = true,fragility = false,isMagical = true,sprite = 2,makesParentInvisible = false,makesParentUnmovable = false){
         let newApple = Object.create(this.apple);
         newApple.currentCords = {x:xCordinante,y:yCordinante};
             if(visibility){
@@ -905,6 +997,8 @@ export class Game extends Phaser.Scene {
             newApple.directionOffSet = offSetValue;
             newApple.isFragile = fragility;
             newApple.canPerformMagic = isMagical;
+            newApple.makeParentInvisible = makesParentInvisible;
+            newApple.makesParentInmovable = makesParentUnmovable;
             
             parentApple.children.push(newApple);
             newApple.children = [];
@@ -973,7 +1067,21 @@ export class Game extends Phaser.Scene {
             });
     }
 
-    
+    CheckEachApplesAbilites(){
+        for(let i = this.apples.length - 1; i >= 0; i--){
+            this.apples[i].checkVisibility(this);
+            this.apples[i].checkMovability();
+            this.apples[i].checkMagicalAbility();
+        }
+    }
+
+    GameTickUpdate(){//Runs evertime the snake moves
+
+        this.DestroyApplesWhoNeedIt();
+
+        this.CheckEachApplesAbilites();
+
+    }
 
 
 }
