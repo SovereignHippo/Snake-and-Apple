@@ -1,7 +1,8 @@
 import { Start } from './scenes/Start.js';
 import {Game} from './scenes/Game.js';
 import {GameOver} from './scenes/GameOver.js';
-//import BBCodeTextPlugin from '/plugins/bbcodetextplugin.js';
+import {StartMenu} from './scenes/StartMenu.js';
+
 
 const config = {
     type: Phaser.AUTO,
@@ -16,6 +17,7 @@ const config = {
         Start,
         Game,
         GameOver,
+        StartMenu,
         
     ],
     scale: {

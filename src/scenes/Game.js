@@ -4,7 +4,7 @@ export class Game extends Phaser.Scene {
     constructor() {
         super('Game');
         
-        this.isDebugingOn = false;
+        this.isDebugingOn = true;
 
         this.playingField = {width: 18, height: 18};
         this.wallWidth = 32; //AKA the grid cell size
@@ -519,6 +519,12 @@ export class Game extends Phaser.Scene {
                 break;
         }
 
+        //Update sprite direction for if the apple dosent move
+            appleRefrence.object?.destroy();
+            if(appleRefrence.isVisible && !appleRefrence.isReadyToBeDeleted){
+                appleRefrence.object = this.add.sprite(appleRefrence.object.x,appleRefrence.object.y ,this.apple.sprites[direction]);
+            }
+
         //Sets apple's sprite based on direction
 
         //Check if control is being held
@@ -544,7 +550,6 @@ export class Game extends Phaser.Scene {
                 appleRefrence.Kill();
                 
             }
-            console.log(`Id: ${appleRefrence.id} - isFragile: ${appleRefrence.isFragile} - target spot: ${!(tagOfTargetSpot == 'w' || tagOfTargetSpot == 's')} - col vis: ${collision?.isVisible}`)
             
 
             return;
