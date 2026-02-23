@@ -21,15 +21,17 @@ export class StartMenu extends Phaser.Scene {
     {
         //Create the score text
             
-            this.scoreText = this.add.rexBBCodeText(this.sys.canvas.width * .28, this.sys.canvas.height * .3 ,"Snake & Apple", {
+            this.titleText = this.add.rexBBCodeText(this.sys.canvas.width * .5, this.sys.canvas.height * .3 ,"Snake & Apple", {
             fontFamily: 'Arial Black', fontSize: 64, color: '#ffffff',
             stroke: '#000000', strokeThickness: 8,
             align: 'center',
             
-        })
+            })
+            this.titleText.setOrigin(.5);
+        
 
         //Replay Button
-            this.replayButton = this.add.rexBBCodeText(this.sys.canvas.width * .4 , this.sys.canvas.height * .6, "Begin", {
+            this.beginButton = this.add.rexBBCodeText(this.sys.canvas.width * .5 , this.sys.canvas.height * .6, "Begin", {
             fontFamily: 'Arial Black', fontSize: 42, color: '#ff0000',
             stroke: '#000000', strokeThickness: 8,
             align: 'center',
@@ -42,11 +44,12 @@ export class StartMenu extends Phaser.Scene {
                 bottom: 5,
             },
            
-        })
-        this.replayButton.setInteractive();
+            })
+            this.beginButton.setInteractive();
+            this.beginButton.setOrigin(.5);
 
         //When replay button is clicked
-        this.replayButton.on('pointerdown', () => { 
+        this.beginButton.on('pointerdown', () => { 
 
 
             this.scene.start('Game');
@@ -55,18 +58,18 @@ export class StartMenu extends Phaser.Scene {
         });
 
         //When replay button is hovered
-        this.replayButton.on('pointerover', () => { 
+        this.beginButton.on('pointerover', () => { 
             
 
-            this.replayButton.setColor("#00ff00");
+            this.beginButton.setColor("#00ff00");
 
 
         }); 
         //When replay button is no longer hovered over
-        this.replayButton.on('pointerout', () => { 
+        this.beginButton.on('pointerout', () => { 
             
 
-            this.replayButton.setColor("#ff0000");
+            this.beginButton.setColor("#ff0000");
 
 
         }); 
